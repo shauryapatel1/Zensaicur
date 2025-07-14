@@ -21,6 +21,7 @@ import LottieAvatar from './LottieAvatar';
 import MoodSelector from './MoodSelector';
 import { MoodLevel } from '../types';
 import { moods } from '../data/moods';
+import DiaryExport from './history/DiaryExport';
 
 interface JournalHistoryScreenProps {
   onBack: () => void;
@@ -55,6 +56,10 @@ export default function JournalHistoryScreen({ onBack }: JournalHistoryScreenPro
   const [editMood, setEditMood] = useState<MoodLevel>(3);
   const [currentPage, setCurrentPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
+  const [showDiaryExport, setShowDiaryExport] = useState(false);
+  const [diaryTheme, setDiaryTheme] = useState('Classic');
+  const [coverTitle, setCoverTitle] = useState('My Zensai Diary');
+  const [coverImage, setCoverImage] = useState<string | null>(null);
   
   const ENTRIES_PER_PAGE = 10;
 
@@ -264,6 +269,12 @@ export default function JournalHistoryScreen({ onBack }: JournalHistoryScreenPro
               </span>
             </div>
           </div>
+          <button
+            onClick={() => setShowDiaryExport(true)}
+            className="px-4 py-2 bg-zen-mint-500 text-white rounded-lg shadow hover:bg-zen-mint-600 transition-all duration-300"
+          >
+            Export Diary
+          </button>
         </div>
       </motion.header>
 
@@ -751,6 +762,64 @@ export default function JournalHistoryScreen({ onBack }: JournalHistoryScreenPro
           </motion.div>
         )}
       </AnimatePresence>
+      {/* Diary Export Modal */}
+      {showDiaryExport && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-3xl w-full relative">
+            <button
+              className="absolute top-2 right-2 text-zen-sage-500 hover:text-zen-sage-800"
+              onClick={() => setShowDiaryExport(false)}
+            >
+              <span className="sr-only">Close</span>
+              &times;
+            </button>
+            <h2 className="font-display text-xl font-bold mb-4">Preview & Export Diary</h2>
+            <div className="flex flex-col md:flex-row gap-6">
+              <div className="flex-1">
+                <label className="block mb-2 font-medium">Theme</label>
+                <select
+                  className="w-full p-2 border rounded mb-4"
+                  value={diaryTheme}
+                  onChange={e => setDiaryTheme(e.target.value)}
+                >
+                  <option value="Classic">Classic</option>
+                  <option value="Night">Night</option>
+                  <option value="Mint">Mint</option>
+                </select>
+                <label className="block mb-2 font-medium">Cover Title</label>
+                <input
+                  className="w-full p-2 border rounded mb-4"
+                  value={coverTitle}
+                  onChange={e => setCoverTitle(e.target.value)}
+                />
+                <label className="block mb-2 font-medium">Cover Image</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="w-full mb-4"
+                  onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = ev => setCoverImage(ev.target?.result as string);
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                />
+              </div>
+              <div className="flex-1 min-w-[300px]">
+                <DiaryExport
+                  entries={sortedEntries}
+                  theme={diaryTheme}
+                  coverTitle={coverTitle}
+                  coverImage={coverImage}
+                />
+              </div>
+            </div>
+            {/* PDF export button will be added later */}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

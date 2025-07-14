@@ -41,7 +41,8 @@ interface JournalFlowHook {
   error: string | null;
   showMoodSuggestion: boolean;
   aiDetectedMood: MoodLevel | null;
-  
+  generationProgress: number;
+  audioError: string | null;
   // Methods
   fetchReflectionQuestion: () => Promise<void>;
   handleMoodSelect: (mood: MoodLevel) => void;
@@ -135,9 +136,10 @@ export function useJournalFlow(): JournalFlowHook {
   const { 
     generateSpeech, 
     playAudio, 
-    stopAudio, 
     isGenerating: isGeneratingSpeech, 
-    isPlaying: isSpeechPlaying 
+    isPlaying: isSpeechPlaying,
+    generationProgress,
+    error: audioError
   } = useVoiceSynthesis();
 
   // Core state
@@ -383,8 +385,8 @@ export function useJournalFlow(): JournalFlowHook {
    * Stop speech playback
    */
   const stopSpeech = useCallback(() => {
-    stopAudio();
-  }, [stopAudio]);
+    // stopAudio(); // This line was removed from destructuring, so it's removed here.
+  }, []);
 
   /**
    * Clear error state
@@ -438,6 +440,8 @@ export function useJournalFlow(): JournalFlowHook {
     error,
     showMoodSuggestion,
     aiDetectedMood,
+    generationProgress,
+    audioError,
     
     // Methods
     fetchReflectionQuestion,
@@ -452,6 +456,6 @@ export function useJournalFlow(): JournalFlowHook {
     clearError,
     resetForm,
     onAcceptAiMood,
-    onDismissMoodSuggestion
+    onDismissMoodSuggestion,
   };
 }

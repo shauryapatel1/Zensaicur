@@ -80,7 +80,8 @@ export function usePremium() {
       }
 
       // Validate environment variables
-      if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+      const env = (import.meta as any).env;
+      if (!env.VITE_SUPABASE_URL || !env.VITE_SUPABASE_ANON_KEY) {
         throw new Error('Supabase environment variables are missing. Please check your .env file.');
       }
 
@@ -134,8 +135,8 @@ export function usePremium() {
       console.error('Error loading user profile:', {
         message: err.message,
         userId: user.id,
-        supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
-        hasAnonKey: !!import.meta.env.VITE_SUPABASE_ANON_KEY,
+        supabaseUrl: (import.meta as any).env.VITE_SUPABASE_URL,
+        hasAnonKey: !!(import.meta as any).env.VITE_SUPABASE_ANON_KEY,
         timestamp: new Date().toISOString()
       });
       
@@ -212,6 +213,39 @@ export function usePremium() {
     return isPremium || isTrialActive;
   }, [isPremium, isTrialActive]);
 
+  /**
+   * Check if user can access the app (trial active OR premium subscriber)
+   */
+  const canAccessApp = useCallback((): boolean => {
+    return isPremium || isTrialActive;
+  }, [isPremium, isTrialActive]);
+
+  /**
+   * Check if user needs to subscribe (trial expired and not premium)
+   */
+  const needsSubscription = useCallback((): boolean => {
+    return !isPremium && !isTrialActive;
+  }, [isPremium, isTrialActive]);
+
+  /**
+   * Get trial status information
+   */
+  const getTrialStatus = useCallback(() => {
+    if (!profile?.created_at) return null;
+    const createdAt = new Date(profile.created_at);
+    const now = new Date();
+    const trialEndDate = new Date(createdAt);
+    trialEndDate.setDate(trialEndDate.getDate() + 7);
+    const daysSinceCreation = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
+    const daysRemaining = Math.max(0, 7 - daysSinceCreation);
+    return {
+      isActive: isTrialActive,
+      daysRemaining,
+      trialEndDate: trialEndDate.toISOString(),
+      createdAt: createdAt.toISOString()
+    };
+  }, [profile, isTrialActive]);
+
   return {
     isPremium,
     isPremiumPlus,
@@ -223,6 +257,9 @@ export function usePremium() {
     hideUpsellModal,
     canUseFeature,
     trackFeatureUsage,
-    isLoadingProfile
+    isLoadingProfile,
+    canAccessApp,
+    needsSubscription,
+    getTrialStatus
   };
 }

@@ -9,6 +9,7 @@ import { useStripe } from './hooks/useStripe';
 import Footer from './components/Footer';
 import ErrorFallback from './components/ErrorFallback';
 import AuthenticatedApp from './components/AuthenticatedApp';
+import { ZenoProvider } from './contexts/ZenoContext';
 
 // Lazy load components
 const AuthScreen = React.lazy(() => import('./components/AuthScreen'));
@@ -181,10 +182,19 @@ function App() {
       <AuthProvider>
         <Router>
           <Sentry.ErrorBoundary 
-            fallback={ErrorFallback}
+            fallback={({ error, resetError, componentStack, eventId }) => (
+              <ErrorFallback 
+                error={error}
+                resetError={resetError}
+                componentStack={componentStack}
+                eventId={eventId}
+              />
+            )}
             showDialog
           >
-            <AppContent />
+            <ZenoProvider>
+                <AppContent />
+            </ZenoProvider>
           </Sentry.ErrorBoundary>
         </Router>
       </AuthProvider>

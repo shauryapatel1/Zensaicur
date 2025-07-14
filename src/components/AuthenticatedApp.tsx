@@ -43,8 +43,8 @@ export default function AuthenticatedApp() {
   } = useJournal();
   const { handleSubscriptionSuccess } = useStripe();
   
-  const { isPremium, isTrialActive, isUpsellModalOpen, upsellContent, showUpsellModal, hideUpsellModal } = usePremium();
-  const [randomZenoVariant, setRandomZenoVariant] = useState<string>('greeting');
+  const { isPremium, isTrialActive, canAccessApp, needsSubscription, getTrialStatus, isUpsellModalOpen, hideUpsellModal, upsellContent, showUpsellModal } = usePremium();
+  const [randomZenoVariant, setRandomZenoVariant] = useState<'greeting' | 'journaling' | 'typing' | undefined>('greeting');
   const [currentView, setCurrentView] = useState<CurrentView>('journal');
 
   // Toast notification state
@@ -70,6 +70,17 @@ export default function AuthenticatedApp() {
       navigate('/home', { replace: true });
     }
   }, [location, navigate]);
+
+  // Redirect to premium page if trial expired and not premium
+  useEffect(() => {
+    if (needsSubscription()) {
+      navigate('/premium', { replace: true });
+    }
+  }, [needsSubscription, navigate]);
+
+  // Show trial expiration warning if <=2 days left
+  const trialStatus = getTrialStatus();
+  const showTrialWarning = isTrialActive && (trialStatus?.daysRemaining ?? 0) <= 2;
 
   const showToast = (message: string, type: ToastType = 'success', badge?: { icon: string; name: string; rarity: string }) => {
     setToastMessage(message);
@@ -233,6 +244,31 @@ export default function AuthenticatedApp() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-zen-mint-50 via-zen-cream-50 to-zen-lavender-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      {/* Trial Warning Banner */}
+      {showTrialWarning && (
+        <motion.div
+          className="bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 border-b border-amber-200 dark:border-amber-800"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="container mx-auto px-4 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                <span className="text-amber-800 dark:text-amber-200 font-medium">
+                  Your free trial ends in {trialStatus?.daysRemaining} day{trialStatus?.daysRemaining !== 1 ? 's' : ''}
+                </span>
+              </div>
+              <button
+                onClick={() => setCurrentView('premium')}
+                className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
+              >
+                Subscribe Now
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      )}
       {/* Header */}
       <motion.header
         className="relative z-10 p-4 flex justify-between items-center"

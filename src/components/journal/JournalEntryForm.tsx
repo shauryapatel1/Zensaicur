@@ -80,6 +80,8 @@ interface JournalEntryFormProps {
   isPremiumUser?: boolean;
   onUpsellTrigger?: (featureName: string, featureDescription: string) => void;
   selectedPhoto?: File | null;
+  generationProgress?: number;
+  audioError?: string;
 }
 
 const JournalEntryForm = React.memo(function JournalEntryForm({
@@ -111,7 +113,9 @@ const JournalEntryForm = React.memo(function JournalEntryForm({
   isPremiumUser = true,
   onUpsellTrigger = () => {},
   selectedPhoto = null, 
-  onPhotoSelect = () => {}
+  onPhotoSelect = () => {},
+  generationProgress,
+  audioError
 }: JournalEntryFormProps) {
   const [isTextareaFocused, setIsTextareaFocused] = useState(false);
 
@@ -221,6 +225,8 @@ const JournalEntryForm = React.memo(function JournalEntryForm({
         showVoiceButton={false}
         isPremiumUser={isPremiumUser}
         onUpsellTrigger={onUpsellTrigger}
+        generationProgress={generationProgress}
+        error={audioError}
       />      
       
       {/* Photo Upload Section */}

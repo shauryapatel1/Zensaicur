@@ -35,6 +35,8 @@ export default function HomeScreen() {
     stopSpeech,
     fetchReflectionQuestion: fetchReflectionQuestionInternal,
     clearError,
+    generationProgress,
+    audioError
   } = useJournalFlow();
   
   const [showSuccess, setShowSuccess] = useState(false);
@@ -201,6 +203,8 @@ export default function HomeScreen() {
         onUpsellTrigger={showUpsellModal}
         selectedPhoto={selectedPhoto}
         onPhotoSelect={setSelectedPhoto}
+        generationProgress={generationProgress}
+        audioError={audioError}
       />
     </>
   );

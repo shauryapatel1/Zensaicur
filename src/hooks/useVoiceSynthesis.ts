@@ -26,6 +26,7 @@ export function useVoiceSynthesis() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [generationProgress, setGenerationProgress] = useState<number>(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Keep track of created object URLs to clean them up
@@ -46,6 +47,7 @@ export function useVoiceSynthesis() {
   ): Promise<string | null> => {
     // Validate and trim text
     setIsProcessing(true);
+    setGenerationProgress(0);
     const trimmedText = text?.trim();
     if (!trimmedText) {
       setError('Text is required for speech generation');
@@ -68,6 +70,11 @@ export function useVoiceSynthesis() {
 
     setIsGenerating(true);
     setError(null);
+
+    // Simulate progress for better UX
+    const progressInterval = setInterval(() => {
+      setGenerationProgress(p => Math.min(p + 10, 90));
+    }, 200);
 
     try {
       console.log('Generating speech with options:', { 
@@ -93,7 +100,9 @@ export function useVoiceSynthesis() {
           user_id: userId
         })
       });
-
+      clearInterval(progressInterval);
+      setGenerationProgress(100);
+      
       // Check if the response is JSON (for storage path) or binary (for direct audio)
       const contentType = response.headers.get('Content-Type') || '';
       
@@ -126,12 +135,9 @@ export function useVoiceSynthesis() {
       console.error('Speech generation error:', functionError);
       throw functionError;
       
-      if (!data || !data.success) {
-        throw new Error(data?.error || 'Failed to generate speech');
-      }
-      
-      return null;
     } catch (err) {
+      clearInterval(progressInterval);
+      setGenerationProgress(0);
       console.error('Error generating speech:', err);
       setError('Failed to generate speech. Please try again.');
       setIsProcessing(false);
@@ -278,6 +284,7 @@ export function useVoiceSynthesis() {
     isGenerating,
     isPlaying,
     error,
-    audioUrl
+    audioUrl,
+    generationProgress
   };
 }

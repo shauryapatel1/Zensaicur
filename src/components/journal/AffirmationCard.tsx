@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, X } from 'lucide-react';
+import { Sparkles, X, Loader2 } from 'lucide-react';
 import VoiceButton from '../VoiceButton';
 
 /**
@@ -26,11 +26,14 @@ interface AffirmationCardProps {
   isGeneratingSpeech?: boolean;
   isSpeechPlaying?: boolean;
   isProcessingAudio?: boolean;
+  onPlaySpeech?: () => Promise<{ success: boolean }>;
   onStopSpeech?: () => void;
   onClose: () => void;
   showVoiceButton?: boolean;
   isPremiumUser?: boolean;
   onUpsellTrigger?: (featureName: string, featureDescription: string) => void;
+  generationProgress?: number;
+  error?: string | null;
 }
 
 const AffirmationCard = React.memo(function AffirmationCard({
@@ -45,7 +48,9 @@ const AffirmationCard = React.memo(function AffirmationCard({
   onClose,
   showVoiceButton = true,
   isPremiumUser = true,
-  onUpsellTrigger = () => {}
+  onUpsellTrigger = () => {},
+  generationProgress = 0,
+  error = null
 }: AffirmationCardProps) {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -94,13 +99,28 @@ const AffirmationCard = React.memo(function AffirmationCard({
                 </p>
               </div>
             </div>
-            
             <div className="flex-shrink-0 flex items-center space-x-2">
+              {/* Audio Generation Progress UI */}
+              {(isGeneratingSpeech || isProcessingAudio) && (
+                <div className="flex flex-col items-center mr-2">
+                  <Loader2 className="w-5 h-5 text-zen-mint-600 animate-spin mb-1" />
+                  <span className="text-xs text-zen-mint-600">Generating audio...</span>
+                  {typeof generationProgress === 'number' && generationProgress > 0 && (
+                    <div className="w-16 bg-zen-sage-200 dark:bg-gray-600 rounded-full h-1 mt-1">
+                      <motion.div
+                        className="bg-gradient-to-r from-zen-mint-400 to-zen-mint-500 h-1 rounded-full"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${generationProgress}%` }}
+                        transition={{ duration: 0.3 }}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
               {showVoiceButton && (
                 <VoiceButton
                   isGenerating={isGeneratingSpeech}
                   isPlaying={isSpeechPlaying}
-                  isProcessing={isProcessingAudio}
                   isProcessing={isProcessingAudio}
                   onPlay={onPlaySpeech}
                   onStop={onStopSpeech}
@@ -112,7 +132,6 @@ const AffirmationCard = React.memo(function AffirmationCard({
                   )}
                 />
               )}
-              
               <button
                 onClick={onClose}
                 className="p-1.5 text-zen-sage-400 hover:text-zen-sage-600 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-white/20 dark:hover:bg-black/20 rounded-full transition-colors"
@@ -122,7 +141,10 @@ const AffirmationCard = React.memo(function AffirmationCard({
               </button>
             </div>
           </div>
-
+          {/* Error Message */}
+          {error && (
+            <div className="mt-2 text-xs text-red-600 dark:text-red-400">{error}</div>
+          )}
           {/* Subtle glow effect */}
           <AnimatePresence>
             {isHovered && (
