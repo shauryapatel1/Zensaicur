@@ -1,0 +1,68 @@
+# Netlify configuration file
+
+# Redirects/rewrites
+[[redirects]]
+  # Redirect all paths to index.html for SPA routing
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Build settings
+[build]
+  # Directory to publish (relative to root of your repo)
+  publish = "dist"
+  # Default build command
+  command = "npm run build"
+
+# Environment variable configuration
+[build.environment]
+  # Set Node.js version
+  NODE_VERSION = "18"
+  SECRETS_SCAN_OMIT_PATHS = "supabase/functions/*"
+  SECRETS_SCAN_OMIT_KEYS = "ELEVENLABS_API_KEY,ELEVENLABS_VOICE_ID,OPENAI_API_KEY,VITE_SUPABASE_ANON_KEY,VITE_STRIPE_PUBLISHABLE_KEY"
+
+# Headers for security and caching
+[[headers]]
+  # Define headers for all files
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin" 
+    Content-Security-Policy = "default-src 'self'; connect-src 'self' https://qtztefefjylsqnxjgbsz.supabase.co wss://qtztefefjylsqnxjgbsz.supabase.co https://*.supabase.co wss://*.supabase.co https://*.stripe.com https://*.sentry.io; script-src 'self' 'unsafe-inline' https://*.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://*.pexels.com https://*.stripe.com; media-src 'self' https://qtztefefjylsqnxjgbsz.supabase.co; frame-src https://*.stripe.com;"
+
+# Cache control for static assets
+[[headers]]
+  for = "*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "*.png"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "*.jpg"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "*.svg"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Plugin configuration
+[dev]
+  # Port for local development server
+  port = 8888
+  # Directory to publish (relative to root of your repo)
+  publish = "dist"
+  # Command to start local development server
+  command = "npm run dev"

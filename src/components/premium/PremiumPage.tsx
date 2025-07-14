@@ -1,0 +1,272 @@
+import React, { useState, useCallback } from 'react';
+import { useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowLeft, Crown, AlertCircle } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext'; 
+import { useJournal } from '../hooks/useJournal';
+import { PREMIUM } from '../constants/uiStrings';
+import Logo from './Logo';
+import { useStripe } from '../hooks/useStripe';
+import { stripeProducts } from '../../src/stripe-config';
+
+// Import components
+import SubscriptionPlanCard from './premium/SubscriptionPlanCard';
+import PremiumFeaturesSection from './premium/PremiumFeaturesSection';
+import FAQSection from './premium/FAQSection';
+import CurrentSubscriptionCard from './premium/CurrentSubscriptionCard';
+import PlanToggle from './premium/PlanToggle';
+import BenefitsSection from './premium/BenefitsSection';
+import PlanSelectionButtons from './premium/PlanSelectionButtons';
+import MobileAppsSection from './premium/MobileAppsSection';
+
+interface PremiumPageProps {
+  onBack: () => void;
+}
+
+export default function PremiumPage({ onBack }: PremiumPageProps) {
+  const { user } = useAuth();
+  const { profile } = useJournal();
+  const { createCheckoutSession, isLoading: isStripeLoading, error: stripeError } = useStripe();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
+
+  // Load price IDs from environment variables
+  useEffect(() => {
+    // Validate that price IDs are available
+    const monthlyPriceId = import.meta.env.VITE_STRIPE_PRICE_ID_MONTHLY;
+    const yearlyPriceId = import.meta.env.VITE_STRIPE_PRICE_ID_YEARLY;
+    
+    if (!monthlyPriceId || !yearlyPriceId) {
+      console.warn('Stripe price IDs are not properly configured:');
+      console.warn('- Monthly:', monthlyPriceId ? 'OK' : 'Missing');
+      console.warn('- Yearly:', yearlyPriceId ? 'OK' : 'Missing');
+    }
+  }, []);
+
+  /**
+   * Handles subscription process by creating a Stripe checkout session
+   */
+  const handleSubscribe = useCallback(async () => {
+    if (!user) return;
+    
+    const priceId = selectedPlan === 'monthly' 
+      ? import.meta.env.VITE_STRIPE_PRICE_ID_MONTHLY 
+      : import.meta.env.VITE_STRIPE_PRICE_ID_YEARLY;
+    
+    if (!priceId) {
+      setError('Price ID is missing. Please check your environment configuration.');
+      return;
+    }
+    
+    setIsLoading(true);
+    setError('');
+    
+    try {
+       const checkoutUrl = await createCheckoutSession(priceId);
+       
+       if (checkoutUrl) {
+         // Redirect to Stripe Checkout
+         window.location.href = checkoutUrl;
+       } else {
+         setError('Failed to create checkout session. Please try again.');
+       }
+    } catch (err) {
+      console.error('Error in subscription process:', err);
+      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
+      setError(`Subscription error: ${errorMessage}`);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user, selectedPlan, createCheckoutSession]);
+
+  const isSubscribed = profile?.subscription_status === 'premium';
+  const isYearlySubscriber = profile?.subscription_tier === 'premium_plus';
+  
+  // Determine if we can enable the subscribe button
+  const monthlyProduct = stripeProducts.find(p => p.name === 'Monthly Premium');
+  const yearlyProduct = stripeProducts.find(p => p.name === 'Yearly Premium');
+  const canSubscribe = !!monthlyProduct?.priceId && !!yearlyProduct?.priceId;
+  
+  // Use combined error state
+  const errorMessage = error || stripeError;
+  
+  const expiryDate = profile?.subscription_expires_at 
+    ? new Date(profile.subscription_expires_at).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
+    : null;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-zen-mint-50 via-zen-cream-50 to-zen-lavender-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      {/* Floating Background Elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          className="absolute top-20 left-10 w-32 h-32 bg-zen-mint-200 dark:bg-zen-mint-800 rounded-full opacity-20"
+          animate={{
+            x: [0, 30, 0],
+            y: [0, -20, 0],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        />
+        <motion.div
+          className="absolute top-40 right-20 w-24 h-24 bg-zen-lavender-200 dark:bg-zen-lavender-800 rounded-full opacity-20"
+          animate={{
+            x: [0, -20, 0],
+            y: [0, 30, 0],
+          }}
+          transition={{
+            duration: 10,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        />
+        <motion.div
+          className="absolute bottom-32 left-1/4 w-40 h-40 bg-zen-peach-200 dark:bg-zen-peach-800 rounded-full opacity-15"
+          animate={{
+            scale: [1, 1.1, 1],
+            rotate: [0, 10, 0],
+          }}
+          transition={{
+            duration: 12,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        />
+      </div>
+
+      {/* Header */}
+      <motion.header
+        className="relative z-10 p-4 bg-white/30 dark:bg-gray-800/30 backdrop-blur-sm border-b border-white/20 dark:border-gray-600/20"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <div className="container mx-auto max-w-6xl flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={onBack}
+              className="p-2 text-zen-sage-600 dark:text-gray-400 hover:text-zen-sage-800 dark:hover:text-gray-200 hover:bg-white/50 dark:hover:bg-gray-700/50 rounded-full transition-all duration-300"
+              aria-label="Go back to previous screen"
+            >
+              <ArrowLeft className="w-5 h-5" aria-hidden="true" />
+            </button>
+            
+            <div className="flex items-center space-x-3">
+              <Logo size="sm" className="mr-1" />
+              <div>
+                <h1 className="font-display font-bold text-zen-sage-800 dark:text-gray-200 flex items-center">
+                  <Crown className="w-5 h-5 mr-2 text-yellow-500" aria-hidden="true" />
+                  Zensai Premium
+                </h1>
+                <p className="text-xs text-zen-sage-600 dark:text-gray-400">
+                  Unlock the full potential of your mindfulness journey
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </motion.header>
+
+      {/* Main Content */}
+      <div className="relative z-10 container mx-auto max-w-6xl px-4 py-8">
+        {/* Free Trial Message for New Users */}
+        {!isSubscribed && (
+          <motion.div
+            className="mb-8 bg-gradient-to-r from-zen-mint-100 to-zen-lavender-100 dark:from-gray-800 dark:to-gray-700 rounded-3xl p-6 shadow-xl border border-zen-mint-200 dark:border-gray-600"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <div className="flex items-center space-x-4">
+              <div className="bg-white/80 dark:bg-gray-700/80 p-3 rounded-full">
+                <Crown className="w-6 h-6 text-yellow-500" aria-hidden="true" />
+              </div>
+              <div>
+                {isTrialActive ? (
+                  <>
+                    <h2 className="text-xl font-bold text-zen-sage-800 dark:text-gray-200">
+                      You're currently enjoying your 7-day free trial
+                    </h2>
+                    <p className="text-zen-sage-600 dark:text-gray-400">
+                      All premium features are available until {
+                        new Date(new Date(profile?.created_at || new Date()).getTime() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })
+                      }. Subscribe now to continue using all features after your trial ends.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <h2 className="text-xl font-bold text-zen-sage-800 dark:text-gray-200">
+                      Your free trial has ended
+                    </h2>
+                    <p className="text-zen-sage-600 dark:text-gray-400">
+                      Subscribe now to regain access to all premium features including voice affirmations, unlimited journaling, and advanced analytics.
+                    </p>
+                  </>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Current Subscription Status */}
+        {isSubscribed && (
+          <CurrentSubscriptionCard
+            isSubscribed={isSubscribed}
+            subscriptionTier={profile?.subscription_tier || 'free'}
+            expiryDate={expiryDate}
+          />
+        )}
+
+        {/* Error Message */}
+        <AnimatePresence>
+          {errorMessage && (
+            <motion.div
+              className="mb-8 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              role="alert"
+              aria-live="assertive"
+            >
+              <div className="flex items-center space-x-2">
+                <AlertCircle className="w-5 h-5 text-red-500" aria-hidden="true" />
+                <p className="text-red-700 dark:text-red-300 text-sm">{errorMessage}</p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Benefits Section */}
+        <BenefitsSection />
+        
+        {/* Plan Selection */}
+        <PlanSelectionButtons
+          selectedPlan={selectedPlan}
+          onSelectPlan={setSelectedPlan}
+          onSubscribe={handleSubscribe}
+          isLoading={isLoading || isStripeLoading}
+          isSubscribed={isSubscribed}
+          disabled={!canSubscribe}
+        />
+
+        {/* Features Section */}
+        <PremiumFeaturesSection />
+        
+        {/* Mobile Apps Section */}
+        <MobileAppsSection />
+
+        {/* FAQ Section */}
+        <FAQSection />
+      </div>
+    </div>
+  );
+}
